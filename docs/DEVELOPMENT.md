@@ -68,11 +68,15 @@ An example ROM export booted to the attract screen in an offscreen FBNeo core. R
 3. Commit the changes and push a matching tag, such as `v0.1.1`.
 4. Review and publish the draft GitHub release after the workflow succeeds.
 
+Alternatively, create and publish a release on GitHub using that matching tag. The **Windows release** workflow builds the tagged source and attaches the Windows ZIP and checksum to the published release. GitHub's automatic source ZIP is separate from the app download.
+
+For a release missing its Windows files, run **Windows release** manually from Actions and enter its tag. A release with both files is left as it is.
+
 Use patch versions for fixes, minor versions for new features and major versions for breaking changes. Every tag must match `VERSION`.
 
-GitHub Actions builds on branch pushes, pull requests and manual runs. The Windows package and checksum are available as a workflow artifact for 30 days. Matching version tags also create a draft release with those files. Reruns can replace draft assets; published releases require a new version. The workflow does not use a game ROM or personal files.
+**Windows build** runs on branch pushes, pull requests and manual runs, and is reused by **Windows release**. Build artifacts are kept for 30 days. Release downloads remain attached to the release. Tag pushes create a draft when no release exists; publishing through GitHub adds downloads to that release. Existing files and release descriptions are preserved. The workflow does not use a game ROM or personal files.
 
-Actions use pinned commits. Dependabot checks those pins monthly. The workflow uses read-only permissions for builds and grants release writes only to the tag job.
+Actions use pinned commits. Dependabot checks those pins monthly. Builds use read-only permissions; only the release upload job can write releases.
 
 ## Source and dependencies
 
