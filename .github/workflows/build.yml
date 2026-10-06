@@ -1,0 +1,98 @@
+name: Windows build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      artifact: ${{ steps.version.outputs.artifact }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: tools/sf3bridge/go.mod
+          cache: false
+
+      - name: Install formatter
+        run: python -m pip install clang-format==19.1.5
+
+      - name: Check formatting
+        run: ./scripts/format.ps1 -Check
+
+      - name: Read version
+        id: version
+        run: |
+          . ./scripts/common.ps1
+          $version = Get-ProjectVersion -Root $PWD.Path
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "artifact=CPS3Instrument-$version-Windows-x64-$($env:GITHUB_SHA.Substring(0, 7))" >> $env:GITHUB_OUTPUT
+
+      - name: Build, test and package
+        run: ./scripts/build.ps1 -Jobs 2
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.version.outputs.artifact }}
+          path: |
+            dist/CPS3Instrument-${{ steps.version.outputs.version }}-Windows-x64.zip
+            dist/CPS3Instrument-${{ steps.version.outputs.version }}-Windows-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: release-assets
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag = "v$env:RELEASE_VERSION"
+          $assets = @(Get-ChildItem -LiteralPath release-assets -File | Select-Object -ExpandProperty FullName)
+          $existing = & gh release view $tag --repo $env:GH_REPO --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+              if (!($existing | ConvertFrom-Json).isDraft) {
+                  throw 'This release is already published; use a new version'
+              }
+              & gh release upload $tag @assets --repo $env:GH_REPO --clobber
+          } else {
+              & gh release create $tag @assets --repo $env:GH_REPO --verify-tag --draft --generate-notes --title "CPS3 Instrument $env:RELEASE_VERSION"
+          }
+          if ($LASTEXITCODE -ne 0) {
+              throw 'Release upload failed'
+          }

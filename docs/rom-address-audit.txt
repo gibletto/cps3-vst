@@ -1,0 +1,35 @@
+ROM address checks: Third Strike 990512 (sfiii3nr1)
+
+Stock sound tables:
+  Instrument banks  06788000
+  Sample table      0678C000
+  Sequence table    0678F000
+  Sequence count    3251
+
+The stock ROM's own code contains these table addresses. Sound data ends at
+067D1F6B. The allocation regions 067D1F6B..067FFFE0 and 06E60000..06FFFFF0
+are zero-filled in the original ROM.
+
+Stock functions (code is not patched by the exporter):
+  sound_seq_start       061394D4
+  sound_driver_tick     0613A408
+  voice_process_primary 0613AC14
+
+Program SHA256 before the instrument banks, used to validate the donor layout:
+  2a15de640f14181e93231d9fb9fcabf2cc030d58709f1ddf174ba85318b5a735
+
+Example sound-code-18 replacement:
+  Original sequence address 0679C92D
+  Replacement address       067D1F6C
+  Changed sequence pointers 1
+  Changed bytes             4803
+  Changed bytes elsewhere   0
+  Changed ZIP entries       sfiii3-simm1.0 through sfiii3-simm1.3
+
+The example export reached the attract screen after 1200 offscreen FBNeo
+frames. The core confirmed that it loaded the patched archive. This verifies
+boot, not playback of the replacement music.
+
+FBNeo direct archive loading identifies the game from the ZIP basename.
+Use sfiii3nr1.zip in a separate output folder. Modified chips may produce
+a checksum warning.
