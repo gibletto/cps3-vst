@@ -81,4 +81,4 @@ Your original ROM is kept intact. Existing exports cannot be overwritten.
 
 ## Source and licence
 
-CPS3 Instrument and its ROM converter are licensed under [AGPL-3.0](LICENSE). Dependency credits are in [Third-party notices](THIRD_PARTY_NOTICES.md). Build instructions are in [Development](docs/DEVELOPMENT.md).
+CPS3 Instrument and its ROM converter are licensed under [AGPL-3.0](LICENSE). The [source code](https://github.com/gibletto/cps3-vst) and [build instructions](https://github.com/gibletto/cps3-vst/blob/main/docs/DEVELOPMENT.md) are on GitHub. Dependency credits are in [Third-party notices](THIRD_PARTY_NOTICES.md).
